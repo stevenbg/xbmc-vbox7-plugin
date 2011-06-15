@@ -1,8 +1,10 @@
-import urllib, urllib2, re, sys
+import urllib, urllib2, re, sys, cookielib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 #from BeautifulSoup import BeautifulSoup, SoupStrainer
 
 handle = int(sys.argv[1])
+
+recursion = 0
 
 USERAGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.8) Gecko/20100722 Firefox/3.6.8"
 
@@ -74,12 +76,115 @@ def getUserInput(title = "Input", default="", hidden=False):
 
 	return result
 
+class RedirectHandler(urllib2.HTTPRedirectHandler):
+
+	def http_error_302(self, req, fp, code, msg, headers):
+
+		cookies = repr(cj)
+
+		if (cookies.find("name='jsSecretToken', value='") == -1):
+			pass
+		else:
+			start = cookies.find("name='jsSecretToken', value='") + len("name='jsSecretToken', value='")
+			jsTok = cookies[start:cookies.find("', port=None", start)]
+
+			__settings__.setSetting("jsTok", jsTok)
+
+			print "redirect: found new jsSecretToken " + jsTok
+
+			req.add_header('Cookie', 'PHPSESSID=' + __settings__.getSetting("PHPSESSID") + '; checkCookies=yes; t=1; jsSecretToken=' + __settings__.getSetting("jsTok") + ';')
+
+
+		result = urllib2.HTTPRedirectHandler.http_error_302(
+			self, req, fp, code, msg, headers)
+
+		return result
+
+cj = cookielib.LWPCookieJar()
+
 def getPage(url):
+	print 'opening ' + url
+
+	global recursion, cj
+
+	recursion += 1
+
 	req = urllib2.Request(url)
 	req.add_header('User-Agent', USERAGENT)
+
+	PHPSESSID = __settings__.getSetting("PHPSESSID")
+
+#	if (len(PHPSESSID) < 1):
+#		PHPSESSID = '1234567890'
+#		__settings__.setSetting("PHPSESSID", PHPSESSID)
+
+	jsTok = __settings__.getSetting("jsTok")
+
+	bla = 'checkCookies=yes; jsSecretToken=' + jsTok + ';'
+
+	if (len(PHPSESSID) > 1):
+		bla += ' PHPSESSID=' + PHPSESSID + ';'
+
+	print "Cookie: " + bla
+
+	req.add_header('Cookie', bla)
+
+	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), RedirectHandler)
+	urllib2.install_opener(opener)
+
 	con = urllib2.urlopen(req)
+
+	cookies = repr(cj)
+	if (cookies.find("name='PHPSESSID', value='") == -1):
+		pass
+	else:
+		start = cookies.find("name='PHPSESSID', value='") + len("name='PHPSESSID', value='")
+		PHPSESSID = cookies[start:cookies.find("', port=None", start)]
+
+		__settings__.setSetting("PHPSESSID", PHPSESSID)
+
+		print "found new PHPSESSID " + PHPSESSID
+
+	if (cookies.find("name='jsSecretToken', value='") == -1):
+		pass
+	else:
+		start = cookies.find("name='jsSecretToken', value='") + len("name='jsSecretToken', value='")
+		jsTok = cookies[start:cookies.find("', port=None", start)]
+
+		__settings__.setSetting("jsTok", jsTok)
+
+		print "found new jsSecretToken " + jsTok
+
 	result = con.read()
 	con.close()
+
+	#document.cookie = 'jsSecretToken=71123cdb459c382;
+
+	if (result.find("document.cookie = '") == -1):
+		pass
+	else:
+		start = result.find("document.cookie = 'jsSecretToken=") + len("document.cookie = 'jsSecretToken=")
+		jsTok = result[start:result.find(";", start)]
+		print 'found document.cookie jsTok ' + jsTok
+		__settings__.setSetting("jsTok", jsTok)
+
+	#window.location = '?js=1&token=b87be4265d&back_to=%2Ftop40'
+
+	if (result.find("window.location = '?js=1&token=") == -1):
+		pass
+	else:
+		start = result.find("window.location = '?js=1&token=") + len("window.location = '?js=1&token=")
+		jsTok = result[start:result.find("&", start)]
+		print 'found window.location jsTok ' + jsTok
+		__settings__.setSetting("jsTok", jsTok)
+
+		start = result.find("window.location = '?") + len("window.location = '?")
+
+		if (recursion < 5):
+			return getPage('http://www.vbox7.com/show:missjavascript?' + result[start:result.find("'", start)])
+
+	recursion -= 1
+
 	return result
 
 def scrapeVideos(url):
