@@ -38,8 +38,15 @@ def getParameters(parameterString):
 
 def addFolderListItem(item_params = {}, size = 0):
 	item = item_params.get
+  
+  icon = "DefaultFolder.png"
+  
+  if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+    thumbnail = "DefaultFolder.png"
+  else:
+    thumbnail = item("thumbnail")
 
-	listitem = xbmcgui.ListItem(item("Title"), thumbnailImage = item('thumbnail'))
+	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
 	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
 
 	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
@@ -50,7 +57,14 @@ def addActionListItem(item_params = {}, size = 0):
 	item = item_params.get
 	folder = False
 
-	listitem = xbmcgui.ListItem(item("Title"), thumbnailImage = item('thumbnail'))
+  icon = "DefaultFolder.png"
+  
+  if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+    thumbnail = "DefaultFolder.png"
+  else:
+    thumbnail = item("thumbnail")
+
+	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
 	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
 
 	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
