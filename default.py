@@ -37,37 +37,33 @@ def getParameters(parameterString):
 	return commands
 
 def addFolderListItem(item_params = {}, size = 0):
-	item = item_params.get
+  item = item_params.get
   
   icon = "DefaultFolder.png"
-  
   if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
     thumbnail = "DefaultFolder.png"
   else:
     thumbnail = item("thumbnail")
 
-	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
-	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+  listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
+  listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+   url = buildItemUrl(item_params, '%s?' % sys.argv[0])
 
-	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
-
-	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=True, totalItems=size)
+   xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=True, totalItems=size)
 
 def addActionListItem(item_params = {}, size = 0):
-	item = item_params.get
-	folder = False
+   item = item_params.get
+   folder = False
 
   icon = "DefaultFolder.png"
-  
   if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
     thumbnail = "DefaultFolder.png"
   else:
     thumbnail = item("thumbnail")
 
-	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
-	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
-
-	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
+  listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
+   listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+  url = buildItemUrl(item_params, '%s?' % sys.argv[0])
 
 	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=folder, totalItems=size)
 
@@ -258,7 +254,7 @@ def ListVideos(url):
 
 def Categories():
 	result = getPage(urls[params['act']])
-	categories = re.compile('class="catThumb".*?href="/category:(.*?)".*?src="(.*?)".*?href=".*?">(.*?)</a>', re.DOTALL).findall(result);
+	categories = re.compile('class="catThumb".*?href="/category_details:(.*?)".*?src="(.*?)".*?href=".*?">(.*?)</a>', re.DOTALL).findall(result);
 	for cid, thumbnail, name in categories:
 		addFolderListItem({'Title': name, 'act': 'category', 'category_id': cid, 'thumbnail': thumbnail})
 
