@@ -37,33 +37,33 @@ def getParameters(parameterString):
 	return commands
 
 def addFolderListItem(item_params = {}, size = 0):
-  item = item_params.get
-  
-  icon = "DefaultFolder.png"
-  if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
-    thumbnail = "DefaultFolder.png"
-  else:
-    thumbnail = item("thumbnail")
+	item = item_params.get
 
-  listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
-  listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
-   url = buildItemUrl(item_params, '%s?' % sys.argv[0])
+	icon = "DefaultFolder.png"
+	if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+		thumbnail = "DefaultFolder.png"
+	else:
+		thumbnail = item("thumbnail")
 
-   xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=True, totalItems=size)
+	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
+	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
+
+	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=True, totalItems=size)
 
 def addActionListItem(item_params = {}, size = 0):
-   item = item_params.get
-   folder = False
+	item = item_params.get
+	folder = False
 
-  icon = "DefaultFolder.png"
-  if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
-    thumbnail = "DefaultFolder.png"
-  else:
-    thumbnail = item("thumbnail")
+	icon = "DefaultFolder.png"
+	if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+		thumbnail = "DefaultFolder.png"
+	else:
+		thumbnail = item("thumbnail")
 
-  listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
-   listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
-  url = buildItemUrl(item_params, '%s?' % sys.argv[0])
+	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
+	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
 
 	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=folder, totalItems=size)
 
