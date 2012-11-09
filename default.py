@@ -1,5 +1,7 @@
 import urllib, urllib2, re, sys, cookielib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
+import CommonFunctions
+common = CommonFunctions
 #from BeautifulSoup import BeautifulSoup, SoupStrainer
 
 handle = int(sys.argv[1])
@@ -11,16 +13,21 @@ USERAGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.8) Gecko/2
 urls = {}
 urls['top40'] = "http://www.vbox7.com/top40"
 urls['categories'] = "http://www.vbox7.com/categories"
-urls['category'] = "http://www.vbox7.com/category:%s&page=1"
+urls['category'] = "http://www.vbox7.com/category:%s&page=%s"
+urls['subscriptions'] = "http://www.vbox7.com/subscriptions:"
+urls['subscription'] = "http://www.vbox7.com/collection:%s&page=%s"
+urls['favorites'] = "http://www.vbox7.com/favorites:%s&page=%s"
 urls['index'] = "http://www.vbox7.com/"
 urls['search_videos_list'] = "http://www.vbox7.com/search/?completed=0&vbox_q=%s&ord=date&period=false"
 
 __settings__ = xbmcaddon.Addon(id='plugin.video.vbox7')
+username = __settings__.getSetting("username")
 
 def buildItemUrl(item_params = {}, url = ""):
-	for k, v in item_params.items():
-		if (k != "Title" and k != 'thumbnail'):
-			url += k + "=" + urllib.quote_plus(v) + "&"
+	blacklist = ("Title", "thumbnail", "icon")
+	for key, value in item_params.items():
+		if key not in blacklist:
+			url += key + "=" + urllib.quote_plus(value) + "&"
 	return url
 
 def getParameters(parameterString):
@@ -38,9 +45,9 @@ def getParameters(parameterString):
 
 def addFolderListItem(item_params = {}, size = 0):
 	item = item_params.get
-
+	
 	icon = "DefaultFolder.png"
-	if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+	if (item("thumbnail", "DefaultFolder.png").find("http://") == -1):
 		thumbnail = "DefaultFolder.png"
 	else:
 		thumbnail = item("thumbnail")
@@ -48,21 +55,28 @@ def addFolderListItem(item_params = {}, size = 0):
 	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
 	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
 	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
+	
+	#Added for Settings link and switch isFolder to False
+	if (item("act") == "settings"):
+		folder = False
+	else:
+		folder = True
 
-	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=True, totalItems=size)
+	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=folder, totalItems=size)
 
 def addActionListItem(item_params = {}, size = 0):
 	item = item_params.get
 	folder = False
 
 	icon = "DefaultFolder.png"
-	if (item("thumbnail" , "DefaultFolder.png").find("http://") == -1):
+	if (item("thumbnail", "DefaultFolder.png").find("http://") == -1):
 		thumbnail = "DefaultFolder.png"
 	else:
 		thumbnail = item("thumbnail")
 
 	listitem = xbmcgui.ListItem(item("Title"), iconImage=icon, thumbnailImage=thumbnail)
 	listitem.setInfo(type = 'video', infoLabels = {'Title': item("Title")})
+	listitem.setProperty('IsPlayable', 'true');
 	url = buildItemUrl(item_params, '%s?' % sys.argv[0])
 
 	xbmcplugin.addDirectoryItem(handle, url=url, listitem=listitem, isFolder=folder, totalItems=size)
@@ -199,14 +213,13 @@ def getPage(url):
 
 def scrapeVideos(url):
 	result = getPage(url)
-
 	objects = []
 
 	videos = re.compile('class="clipThumb".*?href="/play:(.*?)".*?src="(.*?)".*?href=".*?">(.*?)</a>', re.DOTALL).findall(result);
 
 	if (get('act') == 'index'):
 		videos = re.compile('class="editorChoice".*?href="/play:(.*?)".*?src="(.*?)".*?<h4>(.*?)</h4>', re.DOTALL).findall(result) + videos;
-
+		
 	for vid, thumbnail, name in videos:
 		item = {}
 		item['id'] = vid
@@ -216,6 +229,16 @@ def scrapeVideos(url):
 
 	return objects
 
+#Added to check for next page with videos.
+def addNextFolder(url):
+	result = getPage(url)
+	udata = result.decode("utf-8")
+	asciidata = udata.encode("ascii","ignore")
+	pagination = common.parseDOM(asciidata, "div", attrs = { "class": "paginationNew"})
+	if (len(pagination) > 0):
+		tmp = str(pagination)
+		if (tmp.find("nextPage") > 0):
+			return True
 
 def saveSearch(old_query, new_query, store = "stored_searches"):
 	print "stored searches " + store
@@ -244,19 +267,38 @@ def MainMenu():
 	addFolderListItem({'Title': 'Top 40', 'act': 'top40'})
 	addFolderListItem({'Title': 'Categories', 'act': 'categories'})
 	addActionListItem({'Title': 'Play by ID', 'act': 'playbyid', 'name': ''})
+	addFolderListItem({'Title': 'Subscriptions', 'act': 'subscriptions', 'name': ''})
+	addFolderListItem({'Title': 'Favorites', 'act': 'favorites', 'name': ''})
 	addFolderListItem({'Title': 'Search videos', 'act': 'search_videos', 'name': ''})
+	addFolderListItem({'Title': 'Settings', 'act': 'settings', 'name': ''})
 
 
 def ListVideos(url):
 	objects = scrapeVideos(url)
 	for video in objects:
 		addActionListItem({'Title': video['title'], 'thumbnail': video['thumb'], 'act': 'play', 'vid': video['id'], 'name': video['title']})
+	else:
+		#Check for next page in url
+		if(addNextFolder(url) == True):
+			NextPage = str(int(get('page','1')) + 1)
+			if get('act') == 'category':
+				addFolderListItem({'Title': 'More Results', 'act': 'category', 'category_id': get('category_id'), 'page': NextPage, 'thumbnail': 'DefaultFolder.png'})
+			elif get('act') == 'subscription':
+				addFolderListItem({'Title': 'More Results', 'act': 'subscription', 'subscription_id': get('subscription_id'), 'page': NextPage, 'thumbnail': 'DefaultFolder.png'})
+			else:
+				addFolderListItem({'Title': 'More Results', 'act': 'favorites', 'page': NextPage, 'thumbnail': 'DefaultFolder.png'})
 
 def Categories():
 	result = getPage(urls[params['act']])
 	categories = re.compile('class="catThumb".*?href="/category_details:(.*?)".*?src="(.*?)".*?href=".*?">(.*?)</a>', re.DOTALL).findall(result);
 	for cid, thumbnail, name in categories:
 		addFolderListItem({'Title': name, 'act': 'category', 'category_id': cid, 'thumbnail': thumbnail})
+
+def Subscriptions():
+	result = getPage(urls[params['act']] + username)
+	subscriptions = re.compile('class="clipThumb".*?href="/collection:(.*?)".*?src="(.*?)".*?href=".*?">(.*?)</a>', re.DOTALL).findall(result);
+	for sid, thumbnail, name in subscriptions:
+		addFolderListItem({'Title': name, 'act': 'subscription', 'subscription_id': sid, 'thumbnail': thumbnail})
 
 def SearchVideos():
 	addFolderListItem({'Title': 'Search...', 'act': 'search_videos_list'})
@@ -292,14 +334,24 @@ def PlayVid(vid, name = ""):
 	if (len(match) == 1 and len(match[0]) == 2):
 		print "flv: " + match[0][0]
 		print "thumb: " + match[0][1]
-		item = xbmcgui.ListItem(label = name, thumbnailImage = 'http://' + match[0][1])
+		item = xbmcgui.ListItem(label = name, thumbnailImage = 'http://' + match[0][1], path= 'http://' + match[0][0])
 		item.setInfo(type = 'video', infoLabels = {'Title': name})
 		print "playing: " + "http://" + match[0][0]
 		#xbmc.executebuiltin("PlayMedia(" + "http://" + match[0][0] + ")")
-		xbmc.Player().play("http://" + match[0][0], item)
+		##xbmc.Player().play("http://" + match[0][0], item)
+		xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=item)
 		return True
 	else:
 		showMessage('Error', 'Video not found')
+		return False
+
+def getUserName():
+	__settings__.openSettings()
+	uname = __settings__.getSetting("username")
+	if (len(uname) != 0):
+		return True
+	else:
+		showMessage('Error', 'UserName is not set!')
 		return False
 
 params = getParameters(sys.argv[2])
@@ -316,9 +368,15 @@ elif get('act') == 'top40':
 elif get('act') == 'categories':
 	Categories()
 elif get('act') == 'category':
-	ListVideos(urls['category'] % get('category_id'))
+	ListVideos(urls['category'] % (get('category_id'), get('page', 1)))
 elif get('act') == 'playbyid':
 	PlayById()
+elif get('act') == 'subscriptions':
+	Subscriptions()
+elif get('act') == 'subscription':
+	ListVideos(urls['subscription'] % (get('subscription_id'), get('page', 1)))
+elif get('act') == 'favorites':
+	ListVideos(urls[params['act']] % (username, get('page', 1)))
 elif get('act') == 'search_videos':
 	SearchVideos()
 	cache = False
@@ -328,5 +386,7 @@ elif get('act') == 'play':
 	if get('vid') == None:
 		params['vid'] = getUserInput()
 	PlayVid(urllib.unquote_plus(get('vid')), urllib.unquote_plus(get('name')))
+elif get('act') == 'settings':
+	getUserName()
 
 xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=cache)

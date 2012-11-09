@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-
-
+	<!-- General -->
+	<category label="30218">
+	  <setting label="30202" type="lsep"/>
+	  <setting id="username" type="text" label="30200" default="" />
+	  <setting type="sep" />
+	</category>
 </settings>
