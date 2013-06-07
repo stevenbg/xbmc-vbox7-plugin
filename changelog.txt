@@ -1,3 +1,6 @@
+[B]*** 0.2.1 ***[/B]
+- Changes in PlayVid function for parsing correctly video from vbox7.com.
+- Bug fix for item "Subscriptions" and "Favorites" in MainMenu(send empty value in parameter "name" of function addFolderListItem).
 [B]*** 0.2.0 ***[/B]
 - Added new functionality to browse your personal Subscriptions.
 - Added new functionality to browse your personal Favorites.

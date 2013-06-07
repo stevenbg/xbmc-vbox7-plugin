@@ -267,8 +267,8 @@ def MainMenu():
 	addFolderListItem({'Title': 'Top 40', 'act': 'top40'})
 	addFolderListItem({'Title': 'Categories', 'act': 'categories'})
 	addActionListItem({'Title': 'Play by ID', 'act': 'playbyid', 'name': ''})
-	addFolderListItem({'Title': 'Subscriptions', 'act': 'subscriptions', 'name': ''})
-	addFolderListItem({'Title': 'Favorites', 'act': 'favorites', 'name': ''})
+	addFolderListItem({'Title': 'Subscriptions', 'act': 'subscriptions'})
+	addFolderListItem({'Title': 'Favorites', 'act': 'favorites'})
 	addFolderListItem({'Title': 'Search videos', 'act': 'search_videos', 'name': ''})
 	addFolderListItem({'Title': 'Settings', 'act': 'settings', 'name': ''})
 
@@ -334,7 +334,7 @@ def PlayVid(vid, name = ""):
 	if (len(match) == 1 and len(match[0]) == 2):
 		print "flv: " + match[0][0]
 		print "thumb: " + match[0][1]
-		item = xbmcgui.ListItem(label = name, thumbnailImage = 'http://' + match[0][1], path= 'http://' + match[0][0])
+		item = xbmcgui.ListItem(label = name, thumbnailImage = 'http://' + match[0][1], path= match[0][0])
 		item.setInfo(type = 'video', infoLabels = {'Title': name})
 		print "playing: " + "http://" + match[0][0]
 		#xbmc.executebuiltin("PlayMedia(" + "http://" + match[0][0] + ")")
